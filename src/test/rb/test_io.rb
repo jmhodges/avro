@@ -141,7 +141,7 @@ EOS
 
     # test serialization of random data
     randomdata = RandomData.new(schema)
-    9.times { checkser(schema, randomdata) } # FIXME checkser not done
+    9.times { checkser(schema, randomdata) }
 
     # test writing of data to file
     # checkdatafile(schema) # FIXME checkdatafile not written
