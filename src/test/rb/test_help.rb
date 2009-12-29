@@ -14,17 +14,17 @@ class RandomData
   end
 
   def nextdata(schm, d=0)
-    case sch.gettype
+    case schm.gettype
     when Avro::Schema::BOOLEAN
       rand > 0.5
     when Avro::Schema::STRING
       randstr()
     when Avro::Schema::INT
-      rand(Avro::IO::INT_MAX_VALUE + Avro::IO::INT_MIN_VALUE) - Avro::IO::INT_MIN_VALUE
+      rand(Avro::IO::INT_MAX_VALUE - Avro::IO::INT_MIN_VALUE) + Avro::IO::INT_MIN_VALUE
     when Avro::Schema::LONG
-      rand(Avro::IO::LONG_MAX_VALUE + Avro::IO::LONG_MIN_VALUE) - Avro::IO::LONG_MIN_VALUE
-    when Avro::IO::FLOAT
-      -1024 + 2048 * rand
+      rand(Avro::IO::LONG_MAX_VALUE - Avro::IO::LONG_MIN_VALUE) + Avro::IO::LONG_MIN_VALUE
+    when Avro::Schema::FLOAT
+      (-1024 + 2048 * rand).round.to_f
     when Avro::Schema::DOUBLE
       Avro::IO::LONG_MIN_VALUE + (Avro::IO::LONG_MAX_VALUE - Avro::IO::LONG_MIN_VALUE) * rand
     when Avro::Schema::BYTES
@@ -60,7 +60,7 @@ class RandomData
       return nil if len == 0
       symbols[rand(len)]
     when Avro::Schema::FIXED
-      randstr(BYTEPOOL, schm.getsize)
+      BYTEPOOL[rand(BYTEPOOL.size), 1]
     end
   end
 
@@ -69,7 +69,7 @@ class RandomData
 
   def randstr(chars=CHARPOOL, length=20)
     str = ''
-    rand(length).times { str << chars[rand(chars.size)] }
+    rand(length+1).times { str << chars[rand(chars.size)] }
     str
   end
 end

@@ -125,6 +125,7 @@ EOS
   def check(str)
     # parse schema, then convert back to string
     schema = Avro::Schema.parse str
+
     parsed_string = schema.to_s
 
      # test that the round-trip didn't mess up anything
@@ -139,8 +140,8 @@ EOS
     schema.hash
 
     # test serialization of random data
-    randomdata = RandomData.new(@schema)
-    # 9.times { checkser(schema, randomdata) } # FIXME checkser not done
+    randomdata = RandomData.new(schema)
+    9.times { checkser(schema, randomdata) } # FIXME checkser not done
 
     # test writing of data to file
     # checkdatafile(schema) # FIXME checkdatafile not written
@@ -148,12 +149,25 @@ EOS
 
   def checkser(schm, randomdata)
     datum = randomdata.next
-    assert validator(schm, datum)
+    assert validate(schm, datum)
     w = datumwriter(schm)
-    writer = StringIO.new
+    writer = StringIO.new "", "w"
+    w.write(datum, Avro::IO::Encoder.new(writer))
     r = datumreader(schm)
-    reader = StringIO.new(writer.getvalue)
+    reader = StringIO.new(writer.string)
     ob = r.read(Avro::IO::Decoder.new(reader))
     assert_equal(datum, ob) # FIXME check on assertdata conditional
+  end
+
+  def validate(schm, datum)
+    Avro::Schema.validate(schm, datum)
+  end
+
+  def datumwriter(schm)
+    Avro::GenericIO::DatumWriter.new(schm)
+  end
+
+  def datumreader(schm)
+    Avro::GenericIO::DatumReader.new(schm)
   end
 end

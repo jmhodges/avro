@@ -1,11 +1,6 @@
 module Avro
   module GenericIO
-    class DatumReaderBase
-      def set_schema(schema); end
-      def read(decoder); end
-    end
-
-    class DatumReader < DatumReaderBase
+    class DatumReader
       def initialize(actual=nil, expected=nil)
         set_schema(actual)
         @expected = expected
@@ -74,8 +69,50 @@ module Avro
         decoder.read(actual.getsize)
       end
 
-      def read_array(actual, expected, decoder); raise NotImplementedError end
-      def read_map(actual, expected, decoder); raise NotImplementedError end
+      def read_array(actual, expected, decoder)
+        if actual.getelementtype.gettype != expected.getelementtype.gettype
+          raise_match_exception(actual, expected)
+        end
+        result = []
+        size = decoder.read_long
+        while size != 0
+          if size < 0
+            size = -size
+            bytecount = decoder.read_long # ignore bytecount if this is a blocking array
+          end
+
+          size.times do
+            result << read_data(actual.getelementtype,
+                                expected.getelementtype,
+                                decoder)
+          end
+          size = decoder.read_long
+        end
+        result
+      end
+
+      def read_map(actual, expected, decoder)
+        if actual.getvaluetype.gettype != expected.getvaluetype.gettype
+          raise_match_exception(actual, expected)
+        end
+
+        result = {}
+        size = decoder.read_long
+        while size != 0
+          if size < 0
+            size = -size
+            decoder.read_long
+          end
+          size.times do
+            key = decoder.read_string
+            result[key] = read_data(actual.getvaluetype,
+                                    expected.getvaluetype,
+                                    decoder)
+          end
+          size = decoder.read_long
+        end
+        result
+      end
 
       def read_record(actual, expected, decoder)
         check_name(actual, expected)
@@ -111,13 +148,41 @@ module Avro
         return record
       end
 
-      def read_enum(actual, expected, decoder); raise NotImplementedError end
+      def read_enum(actual, expected, decoder)
+        check_name(actual, expected)
+        index = decoder.read_int
+        actual.getenumsymbols[index]
+      end
 
       def skip_fixed; end
       def skip_array; end
       def skip_map; end
       def skip_record; end
       def skip_enum; end
+
+      def resolve(actual, expected)
+        # scan for exact match
+        r = expected.getelementtypes.find{|e| e.gettype == actual.gettype }
+        return r if r
+
+        # san for match via numeric promotion
+        atype = actual.gettype
+        expected.getelementtypes.each do |elem|
+          etype = elem.gettype
+          case atype
+          when Schema::INT
+            if [Schema::LONG, Schema::FLOAT, Schema::DOUBLE].include? etype
+              return elem
+            end
+          when Schema::LONG
+            return elem if [Schema::LONG, Schema::FLOAT].include? etype
+          when Schema::FLOAT
+            return elem if etype == Schema::DOUBLE
+          else
+            raise_match_exception(actual, expected)
+          end
+        end
+      end
 
       def check_name(actual, expected)
         if actual.getname != expected.getname
@@ -169,6 +234,93 @@ module Avro
 
       def raise_match_exception(actual, expected)
         raise AvroException, "Expected "+ expected.to_s + ", found " + actual.to_s
+      end
+    end
+
+    class DatumWriter
+      def initialize(schm=nil)
+        @schm = schm
+        @writers = {
+          Schema::BOOLEAN => lambda {|schm, datum, encoder| 
+            encoder.write_boolean(datum)},
+          Schema::STRING => lambda {|schm, datum, encoder|
+            encoder.write_string(datum)},
+          Schema::INT => lambda {|schm, datum, encoder|
+            encoder.write_int(datum)},
+          Schema::LONG => lambda {|schm, datum, encoder|
+            encoder.write_long(datum)},
+          Schema::FLOAT => lambda {|schm, datum, encoder|
+            encoder.write_float(datum)},
+          Schema::DOUBLE => lambda {|schm, datum, encoder|
+            encoder.write_double(datum)},
+          Schema::BYTES => lambda {|schm, datum, encoder|
+            encoder.write_bytes(datum) },
+          Schema::FIXED => lambda {|schm, datum, encoder| 
+            encoder.write(datum) },
+          Schema::ARRAY => lambda {|schm, datum, encoder| write_array(schm, datum, encoder) },
+          Schema::MAP => lambda {|schm, datum, encoder| write_map(schm, datum, encoder) },
+          Schema::RECORD => lambda {|schm, datum, encoder| write_record(schm, datum, encoder) },
+          Schema::ENUM => lambda {|schm, datum, encoder| write_enum(schm, datum, encoder) },
+          Schema::UNION => lambda {|schm, datum, encoder| write_union(schm, datum, encoder) }
+        }
+      end
+
+      def write(datum, encoder)
+        write_data(@schm, datum, encoder)
+      end
+
+      def write_data(schm, datum, encoder)
+        if schm.gettype == Schema::NULL
+          return if datum.nil?
+          raise AvroTypeError.new(schm, datum)
+        end
+
+        if fn = @writers[schm.gettype]
+          fn.call(schm, datum, encoder)
+        else
+          raise AvroTypeError.new(schm, datum)
+        end
+      end
+
+      def write_map(schm, datum, encoder)
+        raise AvroTypeError.new(schm, datum) unless datum.is_a?(Hash)
+        if datum.size > 0
+          encoder.write_long(datum.size)
+          datum.each do |k,v|
+            encoder.write_string(k)
+            write_data(schm.getvaluetype, v, encoder)
+          end
+        end
+        encoder.write_long(0)
+      end
+
+      def write_array(schm, datum, encoder)
+        raise AvroTypeError.new(schm, datum) unless datum.is_a?(Array)
+        if datum.size > 0
+          encoder.write_long(datum.size)
+          datum.each{|item| write_data(schm.getelementtype, item, encoder) }
+        end
+        encoder.write_long(0)
+      end
+
+      def write_record(schm, datum, encoder)
+        raise AvroTypeError.new(schm, datum) unless datum.is_a?(Hash)
+        schm.getfields.values.each do |field|
+          write_data(field.getschema, datum[field.getname], encoder)
+        end
+      end
+
+      def write_union(schm, datum, encoder)
+        index = schm.getelementtypes.
+          find_index{|e| Schema.validate(e, datum) }
+        raise AvroTypeError.new(schm, datum) unless index
+        encoder.write_long(index)
+        write_data(schm.getelementtypes[index], datum, encoder)
+      end
+
+      def write_enum(schm, datum, encoder)
+        index = schm.getenumordinal(datum)
+        encoder.write_int(index)
       end
     end
   end
