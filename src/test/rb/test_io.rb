@@ -1,41 +1,8 @@
 require 'test_help'
-SCHEMAS_TO_VALIDATE = [
-  ['"null"', nil],
-  ['"boolean"', true],
-  ['"string"', 'adsfasdf09809dsf-=adsf'],
-  ['"bytes"', '12345abcd'],
-  ['"int"', 1234],
-  ['"long"', 1234],
-  ['"float"', 1234.0],
-  ['"double"', 1234.0],
-  ['{"type": "fixed", "name": "Test", "size": 1}', 'B'],
-  ['{"type": "enum", "name": "Test", "symbols": ["A", "B"]}', 'B'],
-  ['{"type": "array", "items": "long"}', [1, 3, 2]],
-  ['{"type": "map", "values": "long"}', {'a' => 1, 'b' => 3, 'c' => 2}],
-  ['["string", "null", "long"]', nil],
-  ['{"type": "record", "name": "Test",'+
-    '"fields": [{"name": "f", "type": "long"}]}',
-   {'f' => 5}],
-  ['{"type": "record",
-    "name": "Lisp",
-    "fields": [{"name": "value",
-                "type": ["null", "string",
-                         {"type": "record",
-                          "name": "Cons",
-                          "fields": [{"name": "car", "type": "Lisp"},
-                                     {"name": "cdr", "type": "Lisp"}]}]}]}',
-   {'value' => {'car' => {'value' => 'head'}, 'cdr' => {'value' => nil}}}]
-]
+
 class TestIO < Test::Unit::TestCase
   DATAFILE = 'build/test/test.rb.avro'
   Schema = Avro::Schema
-  def test_validate
-    SCHEMAS_TO_VALIDATE.each do |expected_schema, datum|
-      validated = Schema.validate(Schema.parse(expected_schema), datum)
-      msg = "Validated schema #{expected_schema} against datum #{datum}"
-      assert validated, msg
-    end
-  end
   
   def test_null
     check_default('"null"', "null", nil)
