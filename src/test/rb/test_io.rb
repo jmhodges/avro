@@ -1,6 +1,42 @@
 require 'test_help'
-
+SCHEMAS_TO_VALIDATE = [
+  ['"null"', nil],
+  ['"boolean"', true],
+  ['"string"', 'adsfasdf09809dsf-=adsf'],
+  ['"bytes"', '12345abcd'],
+  ['"int"', 1234],
+  ['"long"', 1234],
+  ['"float"', 1234.0],
+  ['"double"', 1234.0],
+  ['{"type": "fixed", "name": "Test", "size": 1}', 'B'],
+  ['{"type": "enum", "name": "Test", "symbols": ["A", "B"]}', 'B'],
+  ['{"type": "array", "items": "long"}', [1, 3, 2]],
+  ['{"type": "map", "values": "long"}', {'a' => 1, 'b' => 3, 'c' => 2}],
+  ['["string", "null", "long"]', nil],
+  ['{"type": "record", "name": "Test",'+
+    '"fields": [{"name": "f", "type": "long"}]}',
+   {'f' => 5}],
+  ['{"type": "record",
+    "name": "Lisp",
+    "fields": [{"name": "value",
+                "type": ["null", "string",
+                         {"type": "record",
+                          "name": "Cons",
+                          "fields": [{"name": "car", "type": "Lisp"},
+                                     {"name": "cdr", "type": "Lisp"}]}]}]}',
+   {'value' => {'car' => {'value' => 'head'}, 'cdr' => {'value' => nil}}}]
+]
 class TestIO < Test::Unit::TestCase
+  DATAFILE = 'build/test/test.rb.avro'
+  Schema = Avro::Schema
+  def test_validate
+    SCHEMAS_TO_VALIDATE.each do |expected_schema, datum|
+      validated = Schema.validate(Schema.parse(expected_schema), datum)
+      msg = "Validated schema #{expected_schema} against datum #{datum}"
+      assert validated, msg
+    end
+  end
+  
   def test_null
     check_default('"null"', "null", nil)
   end
@@ -117,8 +153,8 @@ EOS
 EOS
     expected = Avro::Schema.parse(expected_schema)
 
-    reader = Avro::GenericIO::DatumReader.new(actual, expected)
-    record = reader.read(Avro::IO::Decoder.new(StringIO.new))
+    reader = Avro::IO::DatumReader.new(actual, expected)
+    record = reader.read(Avro::IO::BinaryDecoder.new(StringIO.new))
     assert_equal defaultvalue, record["f"]
   end
 
@@ -130,8 +166,8 @@ EOS
 
      # test that the round-trip didn't mess up anything
     # NB: I don't think we should do this. Why enforce ordering?
-    assert_equal(str.gsub(/\s+/,''),
-                  parsed_string.gsub(/\s+/, ''))
+    assert_equal(Yajl.load(str),
+                  Yajl.load(parsed_string))
 
     # test __eq__
     assert_equal(schema, Avro::Schema.parse(str))
@@ -144,19 +180,46 @@ EOS
     9.times { checkser(schema, randomdata) }
 
     # test writing of data to file
-    # checkdatafile(schema) # FIXME checkdatafile not written
+    checkdatafile(schema)
   end
 
   def checkser(schm, randomdata)
     datum = randomdata.next
     assert validate(schm, datum)
-    w = datumwriter(schm)
+    w = Avro::IO::DatumWriter.new(schm)
     writer = StringIO.new "", "w"
-    w.write(datum, Avro::IO::Encoder.new(writer))
+    w.write(datum, Avro::IO::BinaryEncoder.new(writer))
     r = datumreader(schm)
     reader = StringIO.new(writer.string)
-    ob = r.read(Avro::IO::Decoder.new(reader))
+    ob = r.read(Avro::IO::BinaryDecoder.new(reader))
     assert_equal(datum, ob) # FIXME check on assertdata conditional
+  end
+
+  def checkdatafile(schm)
+    seed = 0
+    count = 10
+    random_data = RandomData.new(schm, seed)
+
+   
+    f = File.open(DATAFILE, 'wb')
+    dw = Avro::DataFile::Writer.new(f, datumwriter(schm), schm)
+    count.times{ dw << random_data.next }
+    dw.close
+
+    random_data = RandomData.new(schm, seed)
+
+
+    f = File.open(DATAFILE, 'r+')
+    dr = Avro::DataFile::Reader.new(f, datumreader(schm))
+
+    last_index = nil
+    dr.each_with_index do |data, c|
+      last_index = c
+      # FIXME assertdata conditional
+      assert_equal(random_data.next, data)
+    end
+    dr.close
+    assert_equal count, last_index+1
   end
 
   def validate(schm, datum)
@@ -164,10 +227,10 @@ EOS
   end
 
   def datumwriter(schm)
-    Avro::GenericIO::DatumWriter.new(schm)
+    Avro::IO::DatumWriter.new(schm)
   end
 
   def datumreader(schm)
-    Avro::GenericIO::DatumReader.new(schm)
+    Avro::IO::DatumReader.new(schm)
   end
 end

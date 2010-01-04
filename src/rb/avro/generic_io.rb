@@ -265,6 +265,8 @@ module Avro
         }
       end
 
+      def set_schema(schm); @schm = schm; end
+
       def write(datum, encoder)
         write_data(@schm, datum, encoder)
       end

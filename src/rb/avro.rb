@@ -1,9 +1,11 @@
 #!/usr/bin/env ruby
 require 'yajl'
+require 'openssl'
+require 'set'
 require 'avro/ordered_hash'
 require 'avro/schema'
-require 'avro/generic_io'
 require 'avro/io'
+require 'avro/data_file'
 
 module Avro
   VERSION = "FIXME"
