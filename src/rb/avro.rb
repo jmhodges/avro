@@ -2,7 +2,6 @@
 require 'yajl'
 require 'openssl'
 require 'set'
-require 'avro/ordered_hash'
 require 'avro/schema'
 require 'avro/io'
 require 'avro/data_file'
