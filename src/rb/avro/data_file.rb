@@ -152,8 +152,6 @@ module Avro
           raise DataFileError, "Unknown codec: #{codec_from_file}"
         end
 
-        @file_length = determine_file_length
-
         # get ready to read
         @block_count = 0
         datum_reader.writers_schema = Schema.parse meta['schema']
@@ -180,16 +178,7 @@ module Avro
         end
       end
       
-      # Get file length and leave file cursor where we found it
-      def determine_file_length
-        remember_pos = reader.tell
-        reader.seek(0,2)
-        file_length = reader.tell
-        reader.seek(remember_pos)
-        file_length
-      end
-
-      def eof?; reader.tell == file_length; end
+      def eof?; reader.eof?; end
 
       def close
         reader.close
