@@ -80,10 +80,10 @@ public class SpecificCompiler {
 
     /**
      * Writes output to path destination directory, creating directories as
-     * necessary.
+     * necessary.  Returns the created file.
      */
-    void writeToDestination(File dest) throws IOException {
-      File f = new File(dest, path);
+    File writeToDestination(File destDir) throws IOException {
+      File f = new File(destDir, path);
       f.getParentFile().mkdirs();
       FileWriter fw = new FileWriter(f);
       try {
@@ -91,6 +91,7 @@ public class SpecificCompiler {
       } finally {
         fw.close();
       }
+      return f;
     }
   }
 
@@ -175,10 +176,11 @@ public class SpecificCompiler {
 
   private OutputFile compileInterface(Protocol protocol) {
     OutputFile outputFile = new OutputFile();
-    outputFile.path = makePath(protocol.getName(), protocol.getNamespace());
+    String mangledName = mangle(protocol.getName());
+    outputFile.path = makePath(mangledName, protocol.getNamespace());
     StringBuilder out = new StringBuilder();
     header(out, protocol.getNamespace());
-    line(out, 0, "public interface "+mangle(protocol.getName())+" {");
+    line(out, 0, "public interface " + mangledName + " {");
     line(out, 1, "public static final org.apache.avro.Protocol PROTOCOL = org.apache.avro.Protocol.parse(\""
            +esc(protocol)+"\");");
     for (Map.Entry<String,Message> e : protocol.getMessages().entrySet()) {
@@ -197,10 +199,10 @@ public class SpecificCompiler {
 
   static String makePath(String name, String space) {
     if (space == null || space.isEmpty()) {
-      return cap(name) + ".java";
+      return name + ".java";
     } else {
       return space.replace('.', File.separatorChar) + File.separatorChar
-        + cap(name) + ".java";
+        + name + ".java";
     }
   }
 
@@ -271,7 +273,7 @@ public class SpecificCompiler {
       line(out, 2, "switch (field$) {");
       i = 0;
       for (Map.Entry<String, Schema> field : schema.getFieldSchemas())
-        line(out, 2, "case "+(i++)+": "+field.getKey()+" = ("+
+        line(out, 2, "case "+(i++)+": "+mangle(field.getKey())+" = ("+
              type(field.getValue())+")value$; break;");
       line(out, 2, "default: throw new org.apache.avro.AvroRuntimeException(\"Bad index\");");
       line(out, 2, "}");
@@ -352,10 +354,6 @@ public class SpecificCompiler {
     out.append("\n");
   }
 
-  static String cap(String name) {
-    return name.substring(0,1).toUpperCase()+name.substring(1,name.length());
-  }
-
   static String esc(Object o) {
     return o.toString().replace("\"", "\\\"");
   }
@@ -371,11 +369,11 @@ public class SpecificCompiler {
    */
   public static class SpecificCompilerTool implements Tool {
     @Override
-    public void run(InputStream in, PrintStream out, PrintStream err,
+    public int run(InputStream in, PrintStream out, PrintStream err,
         List<String> args) throws Exception {
       if (args.size() != 3) {
         System.err.println("Expected 3 arguments: (schema|protocol) inputfile outputdir");
-        return;
+        return 1;
       }
       String method = args.get(0);
       File input = new File(args.get(1));
@@ -386,8 +384,9 @@ public class SpecificCompiler {
         compileProtocol(input, output);
       } else {
         System.err.println("Expected \"schema\" or \"protocol\".");
-        return;
+        return 1;
       }
+      return 0;
     }
 
     @Override

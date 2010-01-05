@@ -37,7 +37,15 @@ public class Main {
     tools = new TreeMap<String, Tool>();
     for (Tool tool : new Tool[] {
         new SpecificCompilerTool(),
-        new InduceSchemaTool()
+        new InduceSchemaTool(),
+        new JsonToBinaryFragmentTool(),
+        new BinaryFragmentToJsonTool(),
+        new DataFileReadTool(),
+        new DataFileWriteTool(),
+        new DataFileGetSchemaTool(),
+        new GenAvroTool(),
+        new RpcReceiveTool(),
+        new RpcSendTool()
         }) {
       Tool prev = tools.put(tool.getName(), tool);
       if (prev != null) {
@@ -49,23 +57,25 @@ public class Main {
   }
 
   public static void main(String[] args) throws Exception {
-    new Main().run(args);
+    int rc = new Main().run(args);
+    System.exit(rc);
   }
 
   /**
    * Delegates to tool specified on the command-line.
    */
-  private void run(String[] args) throws Exception {
+  private int run(String[] args) throws Exception {
     if (args.length != 0) {
       Tool tool = tools.get(args[0]);
       if (tool != null) {
-        tool.run(System.in, System.out, System.err, Arrays.asList(args).subList(1, args.length));
-        return;
+        return tool.run(
+          System.in, System.out, System.err, Arrays.asList(args).subList(1, args.length));
       }
     }
     System.err.println("Available tools:");
     for (Tool k : tools.values()) {
       System.err.printf("%" + maxLen + "s  %s\n", k.getName(), k.getShortDescription());
     }
+    return 1;
   }
 }

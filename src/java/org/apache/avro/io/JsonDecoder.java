@@ -18,6 +18,7 @@
 package org.apache.avro.io;
 
 import java.io.IOException;
+import java.io.EOFException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
@@ -42,9 +43,26 @@ public class JsonDecoder extends ParsingDecoder
     super(root);
     init(in);
   }
+  
+  JsonDecoder(Symbol root, String in) throws IOException {
+    super(root);
+    init(in);
+  }
 
+  /** Creates a new JsonDecoder based on an InputStream. */
   public JsonDecoder(Schema schema, InputStream in) throws IOException {
     this(new JsonGrammarGenerator().generate(schema), in);
+  }
+  
+  /** Creates a new JsonDecoder based on a String input. */
+  public JsonDecoder(Schema schema, String in) throws IOException {
+    this(new JsonGrammarGenerator().generate(schema), in);
+  }
+
+  private void advance(Symbol symbol) throws IOException {
+    if (in.getCurrentToken() == null && this.parser.depth() == 1)
+      throw new EOFException();
+    parser.advance(symbol);
   }
 
   @Override
@@ -53,10 +71,17 @@ public class JsonDecoder extends ParsingDecoder
     this.in = new JsonFactory().createJsonParser(in);
     this.in.nextToken();
   }
+  
+  /** Re-initializes to start reading from a new String input. */
+  public void init(String in) throws IOException {
+    parser.reset();
+    this.in = new JsonFactory().createJsonParser(in);
+    this.in.nextToken();
+  }
 
   @Override
   public void readNull() throws IOException {
-    parser.advance(Symbol.NULL);
+    advance(Symbol.NULL);
     if (in.getCurrentToken() == JsonToken.VALUE_NULL) {
       in.nextToken();
     } else {
@@ -66,7 +91,7 @@ public class JsonDecoder extends ParsingDecoder
 
   @Override
   public boolean readBoolean() throws IOException {
-    parser.advance(Symbol.BOOLEAN);
+    advance(Symbol.BOOLEAN);
     JsonToken t = in.getCurrentToken(); 
     if (t == JsonToken.VALUE_TRUE || t == JsonToken.VALUE_FALSE) {
       in.nextToken();
@@ -78,7 +103,7 @@ public class JsonDecoder extends ParsingDecoder
 
   @Override
   public int readInt() throws IOException {
-    parser.advance(Symbol.INT);
+    advance(Symbol.INT);
     if (in.getCurrentToken() == JsonToken.VALUE_NUMBER_INT) {
       int result = in.getIntValue();
       in.nextToken();
@@ -90,7 +115,7 @@ public class JsonDecoder extends ParsingDecoder
     
   @Override
   public long readLong() throws IOException {
-    parser.advance(Symbol.LONG);
+    advance(Symbol.LONG);
     if (in.getCurrentToken() == JsonToken.VALUE_NUMBER_INT) {
       long result = in.getLongValue();
       in.nextToken();
@@ -102,7 +127,7 @@ public class JsonDecoder extends ParsingDecoder
 
   @Override
   public float readFloat() throws IOException {
-    parser.advance(Symbol.FLOAT);
+    advance(Symbol.FLOAT);
     if (in.getCurrentToken() == JsonToken.VALUE_NUMBER_FLOAT) {
       float result = in.getFloatValue();
       in.nextToken();
@@ -114,7 +139,7 @@ public class JsonDecoder extends ParsingDecoder
 
   @Override
   public double readDouble() throws IOException {
-    parser.advance(Symbol.DOUBLE);
+    advance(Symbol.DOUBLE);
     if (in.getCurrentToken() == JsonToken.VALUE_NUMBER_FLOAT) {
       double result = in.getDoubleValue();
       in.nextToken();
@@ -126,7 +151,7 @@ public class JsonDecoder extends ParsingDecoder
     
   @Override
   public Utf8 readString(Utf8 old) throws IOException {
-    parser.advance(Symbol.STRING);
+    advance(Symbol.STRING);
     if (parser.topSymbol() == Symbol.MAP_KEY_MARKER) {
       parser.advance(Symbol.MAP_KEY_MARKER);
       if (in.getCurrentToken() != JsonToken.FIELD_NAME) {
@@ -144,7 +169,7 @@ public class JsonDecoder extends ParsingDecoder
 
   @Override
   public void skipString() throws IOException {
-    parser.advance(Symbol.STRING);
+    advance(Symbol.STRING);
     if (parser.topSymbol() == Symbol.MAP_KEY_MARKER) {
       parser.advance(Symbol.MAP_KEY_MARKER);
       if (in.getCurrentToken() != JsonToken.FIELD_NAME) {
@@ -160,7 +185,7 @@ public class JsonDecoder extends ParsingDecoder
 
   @Override
   public ByteBuffer readBytes(ByteBuffer old) throws IOException {
-    parser.advance(Symbol.BYTES);
+    advance(Symbol.BYTES);
     if (in.getCurrentToken() == JsonToken.VALUE_STRING) {
       byte[] result = readByteArray();
       in.nextToken();
@@ -177,7 +202,7 @@ public class JsonDecoder extends ParsingDecoder
 
   @Override
   public void skipBytes() throws IOException {
-    parser.advance(Symbol.BYTES);
+    advance(Symbol.BYTES);
     if (in.getCurrentToken() == JsonToken.VALUE_STRING) {
       in.nextToken();
     } else {
@@ -186,7 +211,7 @@ public class JsonDecoder extends ParsingDecoder
   }
 
   private void checkFixed(int size) throws IOException {
-    parser.advance(Symbol.FIXED);
+    advance(Symbol.FIXED);
     Symbol.IntCheckAction top = (Symbol.IntCheckAction) parser.popSymbol();
     if (size != top.size) {
       throw new AvroTypeException(
@@ -232,14 +257,14 @@ public class JsonDecoder extends ParsingDecoder
 
   @Override
   protected void skipFixed() throws IOException {
-    parser.advance(Symbol.FIXED);
+    advance(Symbol.FIXED);
     Symbol.IntCheckAction top = (Symbol.IntCheckAction) parser.popSymbol();
     doSkipFixed(top.size);
   }
 
   @Override
   public int readEnum() throws IOException {
-    parser.advance(Symbol.ENUM);
+    advance(Symbol.ENUM);
     Symbol.EnumLabelsAction top = (Symbol.EnumLabelsAction) parser.popSymbol();
     if (in.getCurrentToken() == JsonToken.VALUE_STRING) {
       in.getText();
@@ -256,7 +281,7 @@ public class JsonDecoder extends ParsingDecoder
 
   @Override
   public long readArrayStart() throws IOException {
-    parser.advance(Symbol.ARRAY_START);
+    advance(Symbol.ARRAY_START);
     if (in.getCurrentToken() == JsonToken.START_ARRAY) {
       in.nextToken();
       return doArrayNext();
@@ -267,7 +292,7 @@ public class JsonDecoder extends ParsingDecoder
 
   @Override
   public long arrayNext() throws IOException {
-    parser.advance(Symbol.ITEM_END);
+    advance(Symbol.ITEM_END);
     return doArrayNext();
   }
 
@@ -283,11 +308,11 @@ public class JsonDecoder extends ParsingDecoder
 
   @Override
   public long skipArray() throws IOException {
-    parser.advance(Symbol.ARRAY_START);
+    advance(Symbol.ARRAY_START);
     if (in.getCurrentToken() == JsonToken.START_ARRAY) {
       in.skipChildren();
       in.nextToken();
-      parser.advance(Symbol.ARRAY_END);    
+      advance(Symbol.ARRAY_END);    
     } else {
       throw error("array-start");
     }
@@ -296,7 +321,7 @@ public class JsonDecoder extends ParsingDecoder
 
   @Override
   public long readMapStart() throws IOException {
-    parser.advance(Symbol.MAP_START);
+    advance(Symbol.MAP_START);
     if (in.getCurrentToken() == JsonToken.START_OBJECT) {
       in.nextToken();
       return doMapNext();
@@ -307,14 +332,14 @@ public class JsonDecoder extends ParsingDecoder
 
   @Override
   public long mapNext() throws IOException {
-    parser.advance(Symbol.ITEM_END);
+    advance(Symbol.ITEM_END);
     return doMapNext();
   }
 
   private long doMapNext() throws IOException {
     if (in.getCurrentToken() == JsonToken.END_OBJECT) {
       in.nextToken();
-      parser.advance(Symbol.MAP_END);
+      advance(Symbol.MAP_END);
       return 0;
     } else {
       return 1;
@@ -323,11 +348,11 @@ public class JsonDecoder extends ParsingDecoder
 
   @Override
   public long skipMap() throws IOException {
-    parser.advance(Symbol.MAP_START);
+    advance(Symbol.MAP_START);
     if (in.getCurrentToken() == JsonToken.START_OBJECT) {
       in.skipChildren();
       in.nextToken();
-      parser.advance(Symbol.MAP_END);    
+      advance(Symbol.MAP_END);    
     } else {
       throw error("map-start");
     }
@@ -336,7 +361,7 @@ public class JsonDecoder extends ParsingDecoder
 
   @Override
   public int readIndex() throws IOException {
-    parser.advance(Symbol.UNION);
+    advance(Symbol.UNION);
     Symbol.Alternative a = (Symbol.Alternative) parser.popSymbol();
     
     String label;

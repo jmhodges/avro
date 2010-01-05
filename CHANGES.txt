@@ -20,6 +20,10 @@ Trunk (unreleased changes)
     inherited methods in protocols.  Finally, Java shorts are
     supported as integers.  (cutting)
 
+    AVRO-160. Revised data file format and Java API.  Simplified
+    format now permits streaming but no longer supports multiple
+    schemas per file.  Java API for reading is iterator-based.
+
   NEW FEATURES
 
     AVRO-151. Validating Avro schema parser for C (massie)
@@ -27,6 +31,21 @@ Trunk (unreleased changes)
     AVRO-158. Permit appending to a data file from Java.  (cutting)
 
     AVRO-154. Add 'induce' sub-command to avroj command line tool.
+    (Philip Zeyliger via cutting)
+
+    AVRO-245. Add four new avroj commands:
+      - fromjson Reads JSON records and writes to an Avro data file.
+      - tojson  Dumps an Avro data file as JSON, one record per line.
+      - fragtojson Renders a binary-encoded Avro datum as JSON.
+      - jsontofrag Renders a JSON-encoded Avro datum as binary.
+    (Philip Zeyliger via cutting)
+
+    AVRO-272. Extend RPCContext to include message. 
+    (Philip Zeyliger via cutting)
+
+    AVRO-258. Add GenAvro language tool.  (Todd Lipcon via cutting)
+
+    AVRO-267. Add two new avroj commands: rpcsend and rpcreceive.
     (Philip Zeyliger via cutting)
 
   IMPROVEMENTS
@@ -137,6 +156,16 @@ Trunk (unreleased changes)
     AVRO-257. Remove some dead Java code and un-needed casts.
     (Kevin Oliver via cutting)
 
+    AVRO-263. Change avroj command line tools to return exit codes.
+    (Todd Lipcon via cutting)
+
+    AVRO-260. Upgrade to Jackson 1.4.0. (cutting)
+
+    AVRO-269. Use java compiler to validate specific compiler's output.
+    (Philip Zeyliger via cutting)
+
+    AVRO-219. Rework Python API.  (Jeff Hammerbacher via cutting)
+
   OPTIMIZATIONS
 
     AVRO-172. More efficient schema processing (massie)
@@ -203,6 +232,11 @@ Trunk (unreleased changes)
 
     AVRO-255. Fix Java so that, when parsing schemas, unspecified
     namespaces are defaulted to nearest enclosing namespace. (cutting)
+
+    AVRO-262. Fix two typos in the spec.  (Jeff Hammerbacher via cutting)
+
+    AVRO-276. Fix GenAvro to specify file encoding as UTF-8.
+    (Philip Zeyliger via cutting)
 
 Avro 1.2.0 (14 October 2009)
 

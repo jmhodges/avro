@@ -33,7 +33,7 @@
 
   <dependencies>
     <dependency org="org.codehaus.jackson" name="jackson-mapper-asl"
-        rev="1.3.0"/>
+        rev="1.4.0"/>
     <dependency org="org.slf4j" name="slf4j-api" rev="1.5.8"/>
     <dependency org="org.slf4j" name="slf4j-simple" rev="1.5.8"
         conf="test->default"/>
@@ -52,6 +52,8 @@
         conf="eclipse->default">
         <artifact name="ant-eclipse" type="bz2" />
     </dependency>
+    <dependency org="net.java.dev.javacc" name="javacc" rev="5.0" />
+    <dependency org="commons-lang" name="commons-lang" rev="2.4" />
   </dependencies>
 
 </ivy-module>
