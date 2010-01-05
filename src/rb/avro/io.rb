@@ -55,8 +55,7 @@ module Avro
           n |= (b & 0x7F) << shift
           shift += 7
         end
-        m = (n >> 1) ^ -(n & 1)
-        m
+        (n >> 1) ^ -(n & 1)
       end
 
       def read_float

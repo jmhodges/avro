@@ -369,12 +369,7 @@ module Avro
           type_schema = names[type]
           @type_from_names = true
         else
-          begin
-            type_schema = Schema.real_parse(type, names)
-          rescue
-            msg = 'Type property not a valid Avro schema.'
-            raise SchemaParseError, msg
-          end
+          type_schema = Schema.real_parse(type, names)
         end
         @type = type_schema
         @name = name
@@ -399,15 +394,13 @@ module Avro
     end
   end
 
-
-  class AvroError < StandardError; end
   class SchemaParseError < AvroError; end
 
   module Name
     def self.extract_namespace(name, namespace)
       parts = name.split('.')
       if parts.size > 1
-        namespace, name = parts[0..-2], parts.last
+        namespace, name = parts[0..-2].join('.'), parts.last
       end
       return name, namespace
     end
@@ -430,7 +423,7 @@ module Avro
     end
 
     def self.make_fullname(name, namespace)
-      if name.include?('.') && !namespace.nil?
+      if !name.include?('.') && !namespace.nil?
         namespace + '.' + name
       else
         name

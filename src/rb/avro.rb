@@ -2,12 +2,13 @@
 require 'yajl'
 require 'openssl'
 require 'set'
-require 'avro/schema'
-require 'avro/io'
-require 'avro/data_file'
+require 'md5'
 
 module Avro
   VERSION = "FIXME"
+
+  class AvroError < StandardError; end
+
   class AvroTypeError < Avro::AvroError
     def initialize(schm=nil, datum=nil, msg=nil)
       msg ||= "Not a #{schm.to_s}: #{datum}"
@@ -15,3 +16,9 @@ module Avro
     end
   end
 end
+
+require 'avro/hash_collect'
+require 'avro/schema'
+require 'avro/io'
+require 'avro/data_file'
+require 'avro/protocol'
