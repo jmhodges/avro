@@ -13,7 +13,7 @@ module Avro
 
     class Writer
       def self.generate_sync_marker
-        OpenSSL::Random.random_bytes(16)
+        (0..15).collect{|_| rand(255)}.to_a.pack('c*')
       end
 
       attr_reader :writer, :encoder, :datum_writer, :buffer_writer, :buffer_encoder, :sync_marker, :meta

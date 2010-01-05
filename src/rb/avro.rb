@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 require 'yajl'
-require 'openssl'
 require 'set'
 require 'md5'
 
