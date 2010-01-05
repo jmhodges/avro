@@ -1,6 +1,6 @@
 module Avro
   class Protocol
-    VALID_TYPE_SCHEMA_TYPES = Set.new(['enum', 'record', 'error', 'fixed'])
+    VALID_TYPE_SCHEMA_TYPES = Set.new(%w[enum record error fixed])
     class ProtocolParseError < Avro::AvroError; end
 
     attr_reader :name, :namespace, :types, :messages, :md5
@@ -17,26 +17,21 @@ module Avro
         raise ProtocolParseError, "Not a JSON object: #{json_data}"
       end
     end
-    
+
     def initialize(name, namespace=nil, types=nil, messages=nil)
       # Ensure valid ctor args
       if !name
-        fail_msg = 'Protocols must have a non-empty name.'
-        raise ProtocolParseError, fail_msg
+        raise ProtocolParseError, 'Protocols must have a non-empty name.'
       elsif !name.is_a?(String)
-        fail_msg = 'The name property must be a string.'
-        raise ProtocolParseError, fail_msg
+        raise ProtocolParseError, 'The name property must be a string.'
       elsif !namespace.is_a?(String)
-        fail_msg = 'The namespace property must be a string.'
-        raise ProtocolParseError, fail_msg
+        raise ProtocolParseError, 'The namespace property must be a string.'
       elsif !types.is_a?(Array)
-        fail_msg = 'The types property must be a list.'
-        raise ProtocolParseError, fail_msg
+        raise ProtocolParseError, 'The types property must be a list.'
       elsif !messages.is_a?(Hash)
-        fail_msg = 'The messages property must be a JSON object.'
-        raise ProtocolParseError, fail_msg
+        raise ProtocolParseError, 'The messages property must be a JSON object.'
       end
-      
+
       @name = name
       @namespace = namespace
       type_names = {}
@@ -45,7 +40,6 @@ module Avro
       @md5 = Digest::MD5.hexdigest(to_s)
     end
 
-        
     def to_s
       Yajl.dump to_hash
     end
@@ -53,8 +47,8 @@ module Avro
     def ==(other)
       to_hash == Yajl.load(other.to_s)
     end
-    
-    private 
+
+    private
     def parse_types(types, type_names)
       type_objects = []
       types.collect do |type|
@@ -73,16 +67,14 @@ module Avro
       message_objects = {}
       messages.each do |name, body|
         if message_objects.has_key?(name)
-          msg = "Message name \"#{name}\" repeated."
-          raise ProtocolParseError, msg
+          raise ProtocolParseError, "Message name \"#{name}\" repeated."
         elsif !body.is_a?(Hash)
-          msg = "Message name \"#{name}\" has non-object body #{body.inspect}"
-          raise ProtocolParseError, msg
+          raise ProtocolParseError, "Message name \"#{name}\" has non-object body #{body.inspect}"
         end
 
-        request = body['request']
+        request  = body['request']
         response = body['response']
-        errors = body['errors']
+        errors   = body['errors']
         message_objects[name] = Message.new(name, request, response, errors, names)
       end
       message_objects
@@ -94,7 +86,7 @@ module Avro
       hsh['types'] = types.map{|t| Yajl.load(t.to_s) } if types
 
       if messages
-        hsh['messages'] = messages.hash_collect{|k,t| [k, Yajl.load(t.to_s)] }
+        hsh['messages'] = messages.collect_hash{|k,t| [k, Yajl.load(t.to_s)] }
       end
 
       hsh
@@ -127,8 +119,7 @@ module Avro
 
       def parse_request(request, names)
         unless request.is_a?(Array)
-          msg = "Request property not an Array: #{request.inspect}"
-          raise ProtocolParseError, msg
+          raise ProtocolParseError, "Request property not an Array: #{request.inspect}"
         end
         Schema::RecordSchema.make_field_objects(request, names)
       end
@@ -144,8 +135,7 @@ module Avro
 
       def parse_errors(errors, names)
         unless errors.is_a?(Array)
-          msg = "Errors property not an Array: #{errors}"
-          raise ProtocolParseError, msg
+          raise ProtocolParseError, "Errors property not an Array: #{errors}"
         end
         Schema.real_parse(errors, names)
       end

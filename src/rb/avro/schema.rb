@@ -1,28 +1,10 @@
 module Avro
   class Schema
     # FIXME turn these into symbols to prevent some gc pressure
-    PRIMITIVE_TYPES = Set.new([
-                               'null',
-                               'boolean',
-                               'string',
-                               'bytes',
-                               'int',
-                               'long',
-                               'float',
-                               'double',
-                              ])
-    NAMED_TYPES = Set.new([
-                           'fixed',
-                           'enum',
-                           'record',
-                           'error'
-                          ])
+    PRIMITIVE_TYPES = Set.new(%w[null boolean string bytes int long float double])
+    NAMED_TYPES =     Set.new(%w[fixed enum record error])
 
-    VALID_TYPES = PRIMITIVE_TYPES + NAMED_TYPES + Set.new([
-                                                           'array',
-                                                           'map',
-                                                           'union'
-                                                          ])
+    VALID_TYPES = PRIMITIVE_TYPES + NAMED_TYPES + Set.new(%w[array map union])
 
     INT_MIN_VALUE = -(1 << 31)
     INT_MAX_VALUE = (1 << 31) - 1
@@ -143,11 +125,9 @@ module Avro
       attr_reader :name, :namespace
       def initialize(type, name, namespace=nil, names=nil)
         super(type)
-
         @name, @namespace = Name.extract_namespace(name, namespace)
         names = Name.add_name(names, self)
       end
-
 
       def to_hash
         props = {'name' => @name}
@@ -174,8 +154,7 @@ module Avro
             new_field = Field.new(type, name, default, order, names)
             # make sure field name has not been used yet
             if field_names.include?(new_field.name)
-              msg = "Field name #{new_field.name.inspect} is already in use"
-              raise SchemaParseError, msg
+              raise SchemaParseError, "Field name #{new_field.name.inspect} is already in use"
             end
             field_names << new_field.name
           else
@@ -183,7 +162,7 @@ module Avro
           end
           field_objects << new_field
         end
-        return field_objects
+        field_objects
       end
 
       def initialize(name, namespace, fields, names=nil, schema_type='record')
@@ -196,9 +175,7 @@ module Avro
       end
 
       def to_hash
-        super.merge('fields' => @fields.map do |f|
-                      Yajl.load(f.to_s)
-                    end)
+        super.merge('fields' => @fields.map {|f|Yajl.load(f.to_s)} )
       end
     end
 
@@ -245,8 +222,7 @@ module Avro
           begin
             values_schema = Schema.real_parse(values, names)
           rescue => e
-            msg = 'Values schema not a valid Avro schema.' + e.to_s
-            raise SchemaParseError.new(msg)
+            raise SchemaParseError.new('Values schema not a valid Avro schema.' + e.to_s)
           end
         end
         @values = values_schema
@@ -279,8 +255,7 @@ module Avro
             begin
               new_schema = Schema.real_parse(schema, names)
             rescue
-              msg = 'Union item must be a valid Avro schema'
-              raise SchemaParseError, msg
+              raise SchemaParseError, 'Union item must be a valid Avro schema'
             end
           end
 
@@ -330,12 +305,10 @@ module Avro
     # Valid primitive types are in PRIMITIVE_TYPES.
     class PrimitiveSchema < Schema
       def initialize(type)
-        # Ensure valid ctor args
-        if !PRIMITIVE_TYPES.include? type
+        unless PRIMITIVE_TYPES.include? type
           raise AvroError.new("#{type} is not a valid primitive type.")
         end
 
-        # Call parent ctor
         super(type)
       end
 
@@ -349,18 +322,17 @@ module Avro
       def initialize(name, space, size, names=nil)
         # Ensure valid cto args
         unless size.is_a?(Fixnum) || size.is_a?(Bignum)
-          msg = 'Fixed Schema requires a valid integer for size property.'
-          raise AvroError, msg
+          raise AvroError, 'Fixed Schema requires a valid integer for size property.'
         end
         super('fixed', name, space, names)
         @size = size
       end
-      
+
       def to_hash
         super.merge('size' => @size)
       end
     end
-    
+
     class Field
       attr_reader :type, :name, :default, :order, :type_from_names
       def initialize(type, name, default=nil, order=nil, names=nil)
@@ -409,17 +381,15 @@ module Avro
     def self.add_name(names, new_schema)
       new_fullname = new_schema.fullname
       if Avro::Schema::VALID_TYPES.include?(new_fullname)
-        msg = "#{new_fullname} is a reserved type name."
-        raise SchemaParseError, msg
+        raise SchemaParseError, "#{new_fullname} is a reserved type name."
       elsif names.nil?
         names = {}
       elsif names.has_key?(new_fullname)
-        msg = "The name \"#{new_fullname}\" is already in use."
-        raise SchemaParseError, msg
+        raise SchemaParseError, "The name \"#{new_fullname}\" is already in use."
       end
 
       names[new_fullname] = new_schema
-      return names
+      names
     end
 
     def self.make_fullname(name, namespace)

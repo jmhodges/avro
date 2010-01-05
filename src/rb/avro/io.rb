@@ -3,18 +3,15 @@ module Avro
     # Raised when datum is not an example of schema
     class AvroTypeError < AvroError
       def initialize(expected_schema, datum)
-        msg =
-          "The datum #{datum} is not an example of schema #{expected_schema}"
-        super(msg)
+        super("The datum #{datum} is not an example of schema #{expected_schema}")
       end
     end
 
     # Raised when writer's and reader's schema do not match
     class SchemaMatchException < AvroError
       def initialize(writers_schema, readers_schema)
-        msg = "Writer's schema #{writers_schema} and Reader's schema " +
-          "#{readers_schema} do not match."
-        super(msg)
+        super("Writer's schema #{writers_schema} and Reader's schema " +
+              "#{readers_schema} do not match.")
       end
     end
 
@@ -63,7 +60,7 @@ module Avro
         # The float is converted into a 32-bit integer using a method
         # equivalent to Java's floatToIntBits and then encoded in
         # little-endian format.
-        
+
         bits = (byte! & 0xFF) |
           ((byte! & 0xff) <<  8) |
           ((byte! & 0xff) << 16) |
@@ -76,7 +73,7 @@ module Avro
         # The double is converted into a 64-bit integer using a method
         # equivalent to Java's doubleToLongBits and then encoded in
         # little-endian format.
-        
+
         bits = (byte! & 0xFF) |
           ((byte! & 0xff) <<  8) |
           ((byte! & 0xff) << 16) |
@@ -162,7 +159,6 @@ module Avro
       # equivalent to Java's doubleToLongBits and then encoded in
       # little-endian format.
       def write_double(datum)
-
         bits = [datum].pack('d').unpack('Q')[0]
         @writer.write(((bits      ) & 0xFF).chr)
         @writer.write(((bits >> 8 ) & 0xFF).chr)
@@ -193,7 +189,6 @@ module Avro
       end
     end
 
-    
     class DatumReader
       def self.check_props(schema_one, schema_two, prop_list)
         prop_list.all? do |prop|
@@ -205,35 +200,27 @@ module Avro
         w_type = writers_schema.type
         r_type = readers_schema.type
 
+        # This conditional is begging for some OO love.
         if [w_type, r_type].include? 'union'
           return true
-
         elsif Schema::PRIMITIVE_TYPES.include?(w_type) &&
-            Schema::PRIMITIVE_TYPES.include?(r_type) &&
+              Schema::PRIMITIVE_TYPES.include?(r_type) &&
             w_type == r_type
-          # This conditional is begging for some OO love.
           return true
         elsif (w_type == r_type) && (r_type == 'record') &&
-            check_props(writers_schema, readers_schema,
-                                   ['fullname'])
+            check_props(writers_schema, readers_schema, ['fullname'])
           return true
         elsif (w_type == r_type) && (r_type == 'fixed') &&
-            check_props(writers_schema, readers_schema,
-                                   ['fullname', 'size'])
+            check_props(writers_schema, readers_schema, ['fullname', 'size'])
           return true
         elsif (w_type == r_type) && (r_type == 'enum') &&
-            check_props(writers_schema, readers_schema,
-                                   ['fullname'])
+            check_props(writers_schema, readers_schema, ['fullname'])
           return true
         elsif (w_type == r_type) && (r_type == 'map') &&
-            check_props(writers_schema.values,
-                                   readers_schema.values,
-                                   ['type'])
+            check_props(writers_schema.values, readers_schema.values, ['type'])
           return true
         elsif (w_type == r_type) && (r_type == 'array') &&
-            check_props(writers_schema.items,
-                                   readers_schema.items,
-                                   ['type'])
+            check_props(writers_schema.items, readers_schema.items, ['type'])
           return true
         end
 
@@ -280,29 +267,22 @@ module Avro
         # function dispatch for reading data based on type of writer's
         # schema
         case writers_schema.type
-        when 'null'; decoder.read_null
+        when 'null';    decoder.read_null
         when 'boolean'; decoder.read_boolean
-        when 'string'; decoder.read_string
-        when 'int'; decoder.read_int
-        when 'long'; decoder.read_long
-        when 'float'; decoder.read_float
-        when 'double'; decoder.read_double
-        when 'bytes'; decoder.read_bytes
-        when 'fixed'
-          read_fixed(writers_schema, readers_schema, decoder)
-        when 'enum'
-          read_enum(writers_schema, readers_schema, decoder)
-        when 'array'
-          read_array(writers_schema, readers_schema, decoder)
-        when 'map'
-          read_map(writers_schema, readers_schema, decoder)
-        when 'union'
-          read_union(writers_schema, readers_schema, decoder)
-        when 'record'
-          read_record(writers_schema, readers_schema, decoder)
+        when 'string';  decoder.read_string
+        when 'int';     decoder.read_int
+        when 'long';    decoder.read_long
+        when 'float';   decoder.read_float
+        when 'double';  decoder.read_double
+        when 'bytes';   decoder.read_bytes
+        when 'fixed';   read_fixed(writers_schema, readers_schema, decoder)
+        when 'enum';    read_enum(writers_schema, readers_schema, decoder)
+        when 'array';   read_array(writers_schema, readers_schema, decoder)
+        when 'map';     read_map(writers_schema, readers_schema, decoder)
+        when 'union';   read_union(writers_schema, readers_schema, decoder)
+        when 'record';  read_record(writers_schema, readers_schema, decoder)
         else
-          msg = "Cannot read unknown schema type: #{writers_schema.type}"
-          raise AvroError, msg
+          raise AvroError, "Cannot read unknown schema type: #{writers_schema.type}"
         end
       end
 
@@ -463,44 +443,29 @@ module Avro
 
         # function dispatch to write datum
         case writers_schema.type
-        when 'null'
-          encoder.write_null(datum)
-        when 'boolean'
-          encoder.write_boolean(datum)
-        when 'string'
-          encoder.write_string(datum)
-        when 'int'
-          encoder.write_int(datum)
-        when 'long'
-          encoder.write_long(datum)
-        when 'float'
-          encoder.write_float(datum)
-        when 'double'
-          encoder.write_double(datum)
-        when 'bytes'
-          encoder.write_bytes(datum)
-        when 'fixed'
-          write_fixed(writers_schema, datum, encoder)
-        when 'enum'
-          write_enum(writers_schema, datum, encoder)
-        when 'array'
-          write_array(writers_schema, datum, encoder)
-        when 'map'
-          write_map(writers_schema, datum, encoder)
-        when 'union'
-          write_union(writers_schema, datum, encoder)
-        when 'record'
-          write_record(writers_schema, datum, encoder)
+        when 'null';    encoder.write_null(datum)
+        when 'boolean'; encoder.write_boolean(datum)
+        when 'string';  encoder.write_string(datum)
+        when 'int';     encoder.write_int(datum)
+        when 'long';    encoder.write_long(datum)
+        when 'float';   encoder.write_float(datum)
+        when 'double';  encoder.write_double(datum)
+        when 'bytes';   encoder.write_bytes(datum)
+        when 'fixed';   write_fixed(writers_schema, datum, encoder)
+        when 'enum';    write_enum(writers_schema, datum, encoder)
+        when 'array';   write_array(writers_schema, datum, encoder)
+        when 'map';     write_map(writers_schema, datum, encoder)
+        when 'union';   write_union(writers_schema, datum, encoder)
+        when 'record';  write_record(writers_schema, datum, encoder)
         else
-          fail_msg = "Unknown type: #{writers_schema.type}"
-          raise AvroError.new(fail_msg)
+          raise AvroError.new("Unknown type: #{writers_schema.type}")
         end
       end
-      
+
       def write_fixed(writers_schema, datum, encoder)
         encoder.write(datum)
       end
-      
+
       def write_enum(writers_schema, datum, encoder)
         index_of_datum = writers_schema.symbols.index(datum)
         encoder.write_int(index_of_datum)

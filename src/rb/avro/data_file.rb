@@ -10,17 +10,15 @@ module Avro
     VALID_ENCODINGS = ['binary'] # not used yet
 
     class DataFileError < AvroError; end
-    
+
     class Writer
       def self.generate_sync_marker
         OpenSSL::Random.random_bytes(16)
       end
 
-      attr_reader :writer, :encoder, :datum_writer, :buffer_writer
-      attr_reader :buffer_encoder, :sync_marker, :meta
-
+      attr_reader :writer, :encoder, :datum_writer, :buffer_writer, :buffer_encoder, :sync_marker, :meta
       attr_accessor :block_count
-      
+
       def initialize(writer, datum_writer, writers_schema=nil)
         # If writers_schema is not present, presume we're appending
         @writer = writer
@@ -40,7 +38,7 @@ module Avro
           write_header
         else
           # open writer for reading to collect metadata
-          dfr = DataFileReader.new(writer, IO::DatumReader.new)
+          dfr = DataFileReader.new(writer, Avro::IO::DatumReader.new)
 
           # FIXME(jmhodges): collect arbitrary metadata
           # collect metadata
@@ -133,9 +131,7 @@ module Avro
     class Reader
       include ::Enumerable
 
-      attr_reader :reader, :decoder, :datum_reader, :sync_marker
-      attr_reader :meta, :file_length
-
+      attr_reader :reader, :decoder, :datum_reader, :sync_marker, :meta, :file_length
       attr_accessor :block_count
 
       def initialize(reader, datum_reader)
@@ -177,7 +173,7 @@ module Avro
           yield(datum)
         end
       end
-      
+
       def eof?; reader.eof?; end
 
       def close

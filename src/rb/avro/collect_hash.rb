@@ -1,5 +1,5 @@
 module Enumerable
-  def hash_collect
+  def collect_hash
     inject(Hash.new) do |memo, i|
       k, v = yield(i)
       memo[k] = v if k

@@ -17,7 +17,7 @@ module Avro
   end
 end
 
-require 'avro/hash_collect'
+require 'avro/collect_hash'
 require 'avro/schema'
 require 'avro/io'
 require 'avro/data_file'
