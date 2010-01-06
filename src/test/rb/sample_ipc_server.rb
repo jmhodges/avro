@@ -53,8 +53,8 @@ class MailResponder < Avro::IPC::Responder
     super(MAIL_PROTOCOL)
   end
 
-  def invoke(message, request)
-    if message.name == 'send':
+  def call(message, request)
+    if message.name == 'send'
       request_content = request[0]
       "Sent message to #{request_content['to']} from #{request_content['from']} with body #{request_content['body']}"
     elsif message.name == 'replay'

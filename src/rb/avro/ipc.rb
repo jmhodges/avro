@@ -277,7 +277,7 @@ module Avro::IPC
         request = read_request(writers_fields, buffer_decoder)
         # perform server logic
         begin
-          response = invoke(local_message, request)
+          response = call(local_message, request)
         rescue AvroRemoteError => e
           error = e
         rescue Exception => e
