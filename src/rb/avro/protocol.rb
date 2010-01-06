@@ -37,7 +37,7 @@ module Avro
       type_names = {}
       @types = parse_types(types, type_names)
       @messages = parse_messages(messages, type_names)
-      @md5 = Digest::MD5.hexdigest(to_s)
+      @md5 = Digest::MD5.digest(to_s)
     end
 
     def to_s

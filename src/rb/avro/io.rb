@@ -3,7 +3,7 @@ module Avro
     # Raised when datum is not an example of schema
     class AvroTypeError < AvroError
       def initialize(expected_schema, datum)
-        super("The datum #{datum} is not an example of schema #{expected_schema}")
+        super("The datum #{datum.inspect} is not an example of schema #{expected_schema}")
       end
     end
 
