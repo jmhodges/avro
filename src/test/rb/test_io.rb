@@ -3,7 +3,7 @@ require 'test_help'
 class TestIO < Test::Unit::TestCase
   DATAFILE = 'build/test/test.rb.avro'
   Schema = Avro::Schema
-  
+
   def test_null
     check_default('"null"', "null", nil)
   end
@@ -108,21 +108,21 @@ EOS
 
   private
 
-  def check_default(schemajson, defaultjson, defaultvalue)
-    check(schemajson)
+  def check_default(schema_json, default_json, default_value)
+    check(schema_json)
     actual_schema = '{"type": "record", "name": "Foo", "fields": []}'
     actual = Avro::Schema.parse(actual_schema)
 
     expected_schema = <<EOS
       {"type": "record",
        "name": "Foo",
-       "fields": [{"name": "f", "type": #{schemajson}, "default": #{defaultjson}}]}
+       "fields": [{"name": "f", "type": #{schema_json}, "default": #{default_json}}]}
 EOS
     expected = Avro::Schema.parse(expected_schema)
 
     reader = Avro::IO::DatumReader.new(actual, expected)
     record = reader.read(Avro::IO::BinaryDecoder.new(StringIO.new))
-    assert_equal defaultvalue, record["f"]
+    assert_equal default_value, record["f"]
   end
 
   def check(str)
@@ -147,7 +147,7 @@ EOS
     9.times { checkser(schema, randomdata) }
 
     # test writing of data to file
-    checkdatafile(schema)
+    check_datafile(schema)
   end
 
   def checkser(schm, randomdata)
@@ -156,20 +156,20 @@ EOS
     w = Avro::IO::DatumWriter.new(schm)
     writer = StringIO.new "", "w"
     w.write(datum, Avro::IO::BinaryEncoder.new(writer))
-    r = datumreader(schm)
+    r = datum_reader(schm)
     reader = StringIO.new(writer.string)
     ob = r.read(Avro::IO::BinaryDecoder.new(reader))
     assert_equal(datum, ob) # FIXME check on assertdata conditional
   end
 
-  def checkdatafile(schm)
+  def check_datafile(schm)
     seed = 0
     count = 10
     random_data = RandomData.new(schm, seed)
 
    
     f = File.open(DATAFILE, 'wb')
-    dw = Avro::DataFile::Writer.new(f, datumwriter(schm), schm)
+    dw = Avro::DataFile::Writer.new(f, datum_writer(schm), schm)
     count.times{ dw << random_data.next }
     dw.close
 
@@ -177,7 +177,7 @@ EOS
 
 
     f = File.open(DATAFILE, 'r+')
-    dr = Avro::DataFile::Reader.new(f, datumreader(schm))
+    dr = Avro::DataFile::Reader.new(f, datum_reader(schm))
 
     last_index = nil
     dr.each_with_index do |data, c|
@@ -193,11 +193,11 @@ EOS
     Avro::Schema.validate(schm, datum)
   end
 
-  def datumwriter(schm)
+  def datum_writer(schm)
     Avro::IO::DatumWriter.new(schm)
   end
 
-  def datumreader(schm)
+  def datum_reader(schm)
     Avro::IO::DatumReader.new(schm)
   end
 end
