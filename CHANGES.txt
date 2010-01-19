@@ -24,6 +24,14 @@ Trunk (unreleased changes)
     format now permits streaming but no longer supports multiple
     schemas per file.  Java API for reading is iterator-based.
 
+    AVRO-278. Changed GenericRecord API and implementation to be
+    array-based rather than Map-based. (cutting)
+
+    AVRO-163. Re-organized source tree into separate directories for
+    each language.  (cutting)
+
+    AVRO-344. Complete rewrite of C implementation (massie)
+
   NEW FEATURES
 
     AVRO-151. Validating Avro schema parser for C (massie)
@@ -49,6 +57,16 @@ Trunk (unreleased changes)
     (Philip Zeyliger via cutting)
 
     AVRO-271. Add a Java local RPC transceiver. (Philip Zeyliger via cutting)
+
+    AVRO-273, AVRO-275, & AVRO-279. Add Java RPC statistics collection
+    and display. (Philip Zeyliger via cutting)
+
+    AVRO-152. Add support for documentation strings to schemas,
+    protocols, and messages. (Philip Zeyliger via cutting)
+
+    AVRO-274. Make Java's data file sync interval configurable.  (cutting)
+  
+    AVRO-346. Add function to validate a datum against a schema. (massie)
 
   IMPROVEMENTS
 
@@ -170,9 +188,59 @@ Trunk (unreleased changes)
 
     AVRO-264. Rework Python RPC.  (Jeff Hammerbacher via cutting)
 
+    AVRO-75. Clarify that missing values with no default values cause
+    errors, and fix Java implementation.  (cutting)
+
+    AVRO-259. Add null schema check in GenericData.Record and
+    GenericData.Array construtors. (Kevin Oliver via cutting)
+
+    AVRO-294. Clarify that bytes and fixed are unsigned, and how their
+    JSON default values are interpreted.  (Jeff Hammerbacher & cutting)
+
+    AVRO-298. Fix Java's DatumReader and DatumWriter APIs to better
+    use generics.  (philz via cutting)
+
+    AVRO-288. Implement schema resolution for Python parameters.
+    (Jeff Hammerbacher via cutting)
+
+    AVRO-282. Improve avroj build to better specify dependencies.
+    (philz via cutting)
+
+    AVRO-309. Fix python build, post-AVRO-163. (cutting)
+
+    AVRO-310. Improve top-level build.sh. (cutting)
+
+    AVRO-317. Restore Java data interop tests. (cutting)
+
+    AVRO-320. Rename avroj to be avro-tools.  Also add LICENSE.txt and
+    NOTICE.txt to it, print the NOTICE.txt and version in help, and
+    include the tools jar in distributions.  (cutting)
+
+    AVRO-314. Add mvn-install ant task to publish jar to local Maven
+    repository.  (Aaron Kimball via cutting)
+
+    AVRO-243. Use automake generated Makefile.in (sbanacho)
+
+    AVRO-198. Fix specification of protocol name, also clarify which
+    properties are required.  (cutting)
+
+    AVRO-336. Check that appropriate schemas are passed to
+    GenericData#Record and #Array.  (cutting)
+
   OPTIMIZATIONS
 
     AVRO-172. More efficient schema processing (massie)
+
+    AVRO-291. Set NODELAY in Java's SocketTransceiver.
+    (Eric Evans via cutting)
+
+    AVRO-315. Performance improvements to BinaryDecoder (thiru)
+
+    AVRO-316. Optiminzing inner loop functions of Avro io (thiru)
+
+    AVRO-328. Performance improvements Validating encoder/decoder for nested records (thiru)
+
+    AVRO-345. Optimization for ResolvingDecoder (thiru)
 
   BUG FIXES
  
@@ -241,6 +309,29 @@ Trunk (unreleased changes)
 
     AVRO-276. Fix GenAvro to specify file encoding as UTF-8.
     (Philip Zeyliger via cutting)
+
+    AVRO-280. Fix file header schema in specification.  Also fix
+    "forrestdoc" build target to work on clean checkout.
+    (Jeff Hammerbacher & cutting)	 
+
+    AVRO-292. Fix Python skipping of ints and longs.
+    (Jeff Hammerbacher via cutting)
+
+    AVRO-289. Fix Python schema resolution.
+    (Jeff Hammerbacher via cutting)
+
+    AVRO-281. Symlink in build.xml does not work well with Cygwin (thiru)
+
+    AVRO-299. Fix Python numeric promotion.  (Jeff Hammerbacher via cutting)
+
+    AVRO-207. Fix Python to detect duplicate enum symbols and add
+    tests for duplicates in unions.  (Jeff Hammerbacher via cutting)
+
+    AVRO-313. Default values for fields or records and array (or map) don't work with ResolvingDecoder (thiru)
+
+    AVRO-337. ant test-java fails in Cygwin due to CRLF v LF problem (thiru)
+ 
+    AVRO-347. Add the --unsafe flag to asciidoc in order to include source/header files (massie)
 
 Avro 1.2.0 (14 October 2009)
 

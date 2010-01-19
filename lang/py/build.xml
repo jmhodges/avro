@@ -1,0 +1,83 @@
+
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one or more
+   contributor license agreements.  See the NOTICE file distributed with
+   this work for additional information regarding copyright ownership.
+   The ASF licenses this file to You under the Apache License, Version 2.0
+   (the "License"); you may not use this file except in compliance with
+   the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
+<project name="Avro" default="dist">
+ 
+  <!-- Load user's default properties. -->
+  <property file="${user.home}/build.properties" />
+
+  <property name="share.dir" value="${basedir}/../../share"/>
+  <property name="dist.dir" value="${basedir}/../../dist"/>
+
+  <loadresource property="version">
+    <file file="${share.dir}/VERSION.txt"/>
+  </loadresource>
+
+  <property name="doc.dir" value="${basedir}/../../build/avro-doc-${version}"/>
+
+  <path id="java.classpath">
+    <fileset dir="lib">
+      <include name="**/*.jar" />
+    </fileset>
+  </path>
+
+  <path id="test.path">
+    <pathelement location="${basedir}/src"/>
+    <pathelement location="${basedir}/test"/>
+    <pathelement location="${basedir}/lib"/>
+  </path>
+
+  <target name="init">
+    <copy todir="${basedir}/src/avro">
+      <fileset dir="${share.dir}/schemas/org/apache/avro/ipc">
+      	<include name="**/*.avsc"/>
+      </fileset>
+    </copy>
+  </target>
+
+  <target name="test" depends="init" description="Run python unit tests">
+    <taskdef name="py-test" classname="org.pyant.tasks.PythonTestTask"
+	     classpathref="java.classpath"/>
+    <py-test python="python" pythonpathref="test.path" >
+      <fileset dir="${basedir}/test">
+        <include name="test_*.py"/>
+      </fileset>
+    </py-test>
+  </target>
+
+  <target name="doc" description="Generate python api docs">
+    <taskdef name="py-doc" classname="org.pyant.tasks.PythonDocTask"
+	     classpathref="java.classpath"/>
+    <mkdir dir="${doc.dir}/api/py"/>
+    <py-doc python="python" pythonpathref="test.path" defaultexcludes="true"
+       destdir="${doc.dir}/api/py">
+      <fileset dir="${basedir}/src"/>
+    </py-doc>
+  </target>
+
+  <target name="dist" depends="doc" description="Build distribution">
+  </target>
+
+  <target name="clean" description="Delete build files, and their directories">
+    <delete>
+      <fileset dir="src" includes="**/*.pyc" />
+      <fileset dir="${basedir}/src/avro" includes="**/*.avsc"/>
+    </delete>
+  </target>
+
+</project>
