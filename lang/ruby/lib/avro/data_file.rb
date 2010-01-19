@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require 'openssl'
+
 module Avro
   module DataFile
     VERSION = 0
@@ -29,7 +31,7 @@ module Avro
 
     class Writer
       def self.generate_sync_marker
-        (0..15).collect{|_| rand(255)}.to_a.pack('c*')
+        OpenSSL::Random.random_bytes(16)
       end
 
       attr_reader :writer, :encoder, :datum_writer, :buffer_writer, :buffer_encoder, :sync_marker, :meta
