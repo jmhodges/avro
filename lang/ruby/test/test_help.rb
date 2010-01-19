@@ -14,9 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require 'rubygems'
 require 'test/unit'
 require 'avro'
 require 'stringio'
+
+require 'fileutils'
+FileUtils.mkdir_p('tmp')
 
 class RandomData
   def initialize(schm, seed=nil)

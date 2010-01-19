@@ -17,7 +17,7 @@
 require 'test_help'
 
 class TestIO < Test::Unit::TestCase
-  DATAFILE = 'build/test/test.rb.avro'
+  DATAFILE = 'tmp/test.rb.avro'
   Schema = Avro::Schema
 
   def test_null
