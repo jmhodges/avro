@@ -128,6 +128,110 @@ EOS
       schema = Avro::Schema.parse str
     end
   end
+
+  BINARY_INT_ENCODINGS = [
+    [0, '00'],
+    [-1, '01'],
+    [1, '02'],
+    [-2, '03'],
+    [2, '04'],
+    [-64, '7f'],
+    [64, '80 01'],
+    [8192, '80 80 01'],
+    [-8193, '81 80 01'],
+  ]
+
+  def avro_hexlify(reader)
+    bytes = []
+    current_byte = reader.read(1)
+    bytes << hexlify(current_byte)
+    while (current_byte[0] & 0x80) != 0
+      current_byte = reader.read(1)
+      bytes << hexlify(current_byte)
+    end
+    bytes.join ' '
+  end
+
+  def hexlify(msg)
+    msg.split("").collect { |c| c[0].to_s(16).rjust(2, '0') }.join
+  end
+
+  def test_binary_int_encoding
+    for value, hex_encoding in BINARY_INT_ENCODINGS
+      # write datum in binary to string buffer
+      buffer = StringIO.new
+      encoder = Avro::IO::BinaryEncoder.new(buffer)
+      datum_writer = Avro::IO::DatumWriter.new(Avro::Schema.parse('"int"'))
+      datum_writer.write(value, encoder)
+
+      buffer.seek(0)
+      hex_val = avro_hexlify(buffer)
+
+      assert_equal hex_encoding, hex_val
+    end
+  end
+
+  def test_binary_long_encoding
+    for value, hex_encoding in BINARY_INT_ENCODINGS
+      buffer = StringIO.new
+      encoder = Avro::IO::BinaryEncoder.new(buffer)
+      datum_writer = Avro::IO::DatumWriter.new(Avro::Schema.parse('"long"'))
+      datum_writer.write(value, encoder)
+
+      # read it out of the buffer and hexlify it
+      buffer.seek(0)
+      hex_val = avro_hexlify(buffer)
+
+      assert_equal hex_encoding, hex_val
+    end
+  end
+
+  def test_skip_long
+    for value_to_skip, hex_encoding in BINARY_INT_ENCODINGS
+      value_to_read = 6253
+
+      # write some data in binary to string buffer
+      writer = StringIO.new
+      encoder = Avro::IO::BinaryEncoder.new(writer)
+      datum_writer = Avro::IO::DatumWriter.new(Avro::Schema.parse('"long"'))
+      datum_writer.write(value_to_skip, encoder)
+      datum_writer.write(value_to_read, encoder)
+
+      # skip the value
+      reader = StringIO.new(writer.string())
+      decoder = Avro::IO::BinaryDecoder.new(reader)
+      decoder.skip_long()
+
+      # read data from string buffer
+      datum_reader = Avro::IO::DatumReader.new(Avro::Schema.parse('"long"'))
+      read_value = datum_reader.read(decoder)
+
+      # check it
+      assert_equal value_to_read, read_value
+    end
+  end
+
+  def test_skip_int
+    for value_to_skip, hex_encoding in BINARY_INT_ENCODINGS
+      value_to_read = 6253
+
+      writer = StringIO.new
+      encoder = Avro::IO::BinaryEncoder.new(writer)
+      datum_writer = Avro::IO::DatumWriter.new(Avro::Schema.parse('"int"'))
+      datum_writer.write(value_to_skip, encoder)
+      datum_writer.write(value_to_read, encoder)
+
+      reader = StringIO.new(writer.string)
+      decoder = Avro::IO::BinaryDecoder.new(reader)
+      decoder.skip_int
+
+      datum_reader = Avro::IO::DatumReader.new(Avro::Schema.parse('"int"'))
+      read_value = datum_reader.read(decoder)
+
+      assert_equal value_to_read, read_value
+    end
+  end
+
   private
 
   def check_default(schema_json, default_json, default_value)

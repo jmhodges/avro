@@ -118,6 +118,45 @@ module Avro
         # Read n bytes
         @reader.read(len)
       end
+
+      def skip_null
+        nil
+      end
+
+      def skip_boolean
+        skip(1)
+      end
+
+      def skip_int
+        skip_long
+      end
+
+      def skip_long
+        b = byte!
+        while (b & 0x80) != 0
+          b = byte!
+        end
+      end
+
+      def skip_float
+        skip(4)
+      end
+
+      def skip_double
+        skip(8)
+      end
+
+      def skip_bytes
+        skip(read_long)
+      end
+
+      def skip_string
+        skip_bytes
+      end
+
+      def skip(n)
+        reader.seek(reader.tell() + n)
+      end
     end
 
     # Write leaf values
