@@ -226,6 +226,10 @@ module Avro
         elsif (w_type == r_type) && (r_type == 'record') &&
             check_props(writers_schema, readers_schema, ['fullname'])
           return true
+        elsif w_type == r_type && r_type == 'error' && check_props(writers_scheam, readers_schema, ['fullname'])
+          return true
+        elsif w_type == r_type && r_type == 'request'
+          return true
         elsif (w_type == r_type) && (r_type == 'fixed') &&
             check_props(writers_schema, readers_schema, ['fullname', 'size'])
           return true
@@ -296,7 +300,7 @@ module Avro
         when 'array';   read_array(writers_schema, readers_schema, decoder)
         when 'map';     read_map(writers_schema, readers_schema, decoder)
         when 'union';   read_union(writers_schema, readers_schema, decoder)
-        when 'record';  read_record(writers_schema, readers_schema, decoder)
+        when 'record', 'errors', 'request';  read_record(writers_schema, readers_schema, decoder)
         else
           raise AvroError, "Cannot read unknown schema type: #{writers_schema.type}"
         end
@@ -472,7 +476,7 @@ module Avro
         when 'array';   write_array(writers_schema, datum, encoder)
         when 'map';     write_map(writers_schema, datum, encoder)
         when 'union';   write_union(writers_schema, datum, encoder)
-        when 'record';  write_record(writers_schema, datum, encoder)
+        when 'record', 'errors', 'request';  write_record(writers_schema, datum, encoder)
         else
           raise AvroError.new("Unknown type: #{writers_schema.type}")
         end

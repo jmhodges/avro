@@ -155,13 +155,9 @@ module Avro::IPC
       write_request(message.request, request_datum, encoder)
     end
 
-    def write_request(request_fields, request_datum, encoder)
-      # Looks an awful lot like new_io.write_record, eh?
-
-      for field in request_fields
-        datum_writer = Avro::IO::DatumWriter.new(field.type)
-        datum_writer.write(request_datum[field.name], encoder)
-      end
+    def write_request(request_schema, request_datum, encoder)
+      datum_writer = Avro::IO::DatumWriter.new(request_schema)
+      datum_writer.write(request_datum, encoder)
     end
 
     def read_handshake_response(decoder)
@@ -272,9 +268,9 @@ module Avro::IPC
         unless local_message
           raise AvroError.new("Unknown local message: #{remote_message_name}")
         end
-        writers_fields = remote_message.request
-        # TODO(hammer) pass reader schema
-        request = read_request(writers_fields, buffer_decoder)
+        writers_schema = remote_message.request
+        readers_schema = local_message.request
+        request = read_request(writers_schema, readers_schema, buffer_decoder)
         # perform server logic
         begin
           response = call(local_message, request)
@@ -347,14 +343,9 @@ module Avro::IPC
       raise NotImplementedError
     end
 
-    def read_request(writers_fields, decoder)
-      # Need to handle schema resolution here. Half-assing it now.
-      request_data = []
-      for field in writers_fields
-        datum_reader = Avro::IO::DatumReader.new(field.type)
-        request_data << datum_reader.read(decoder)
-      end
-      request_data
+    def read_request(writers_schema, readers_schema, decoder)
+      datum_reader = Avro::IO::DatumReader.new(writers_schema, readers_schema)
+      datum_reader.read(decoder)
     end
 
     def write_response(writers_schema, response_datum, encoder)

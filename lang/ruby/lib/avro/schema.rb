@@ -20,7 +20,7 @@ module Avro
     PRIMITIVE_TYPES = Set.new(%w[null boolean string bytes int long float double])
     NAMED_TYPES =     Set.new(%w[fixed enum record error])
 
-    VALID_TYPES = PRIMITIVE_TYPES + NAMED_TYPES + Set.new(%w[array map union])
+    VALID_TYPES = PRIMITIVE_TYPES + NAMED_TYPES + Set.new(%w[array map union request])
 
     INT_MIN_VALUE = -(1 << 31)
     INT_MAX_VALUE = (1 << 31) - 1
@@ -107,7 +107,7 @@ module Avro
           datum.values.all?{|v| validate(expected_schema.values, v) }
       when 'union'
         expected_schema.schemas.any?{|s| validate(s, datum) }
-      when 'record'
+      when 'record', 'error', 'request'
         datum.is_a?(Hash) &&
           expected_schema.fields.all?{|f| validate(f.type, datum[f.name]) }
       else
@@ -182,7 +182,11 @@ module Avro
       end
 
       def initialize(name, namespace, fields, names=nil, schema_type='record')
-        super(schema_type, name, namespace, names)
+        if schema_type == 'request'
+          @type = schema_type
+        else
+          super(schema_type, name, namespace, names)
+        end
         @fields = RecordSchema.make_field_objects(fields, names)
       end
 
@@ -191,7 +195,12 @@ module Avro
       end
 
       def to_hash
-        super.merge('fields' => @fields.map {|f|Yajl.load(f.to_s)} )
+        hsh = super.merge('fields' => @fields.map {|f|Yajl.load(f.to_s)} )
+        if type == 'request'
+          hsh['fields']
+        else
+          hsh
+        end
       end
     end
 

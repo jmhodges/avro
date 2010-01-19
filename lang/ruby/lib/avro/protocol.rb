@@ -120,7 +120,7 @@ module Avro
       end
 
       def to_s
-        hsh = {'request' => request.map{|r| Yajl.load(r.to_s) }}
+        hsh = {'request' => Yajl.load(request.to_s)}
         if response_from_names
           hsh['response'] = response.fullname
         else
@@ -137,7 +137,7 @@ module Avro
         unless request.is_a?(Array)
           raise ProtocolParseError, "Request property not an Array: #{request.inspect}"
         end
-        Schema::RecordSchema.make_field_objects(request, names)
+        Schema::RecordSchema.new(nil, nil, request, names, 'request')
       end
 
       def parse_response(response, names)
