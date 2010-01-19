@@ -122,6 +122,12 @@ EOS
     check_default(fixed_schema, '"a"', "a")
   end
 
+  def test_enum_with_duplicate
+    str = '{"type": "enum", "name": "Test","symbols" : ["AA", "AA"]}'
+    assert_raises(Avro::SchemaParseError) do
+      schema = Avro::Schema.parse str
+    end
+  end
   private
 
   def check_default(schema_json, default_json, default_value)

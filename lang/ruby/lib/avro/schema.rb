@@ -308,7 +308,10 @@ module Avro
     class EnumSchema < NamedSchema
       attr_reader :symbols
       def initialize(name, space, symbols, names=nil)
-        # Ensure valid ctor args
+        if symbols.uniq.length < symbols.length
+          fail_msg = 'Duplicate symbol: %s' % symbols
+          raise Avro::SchemaParseError, fail_msg
+        end
         super('enum', name, space, names)
         @symbols = symbols
       end
