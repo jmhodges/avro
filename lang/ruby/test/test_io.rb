@@ -232,6 +232,23 @@ EOS
     end
   end
 
+  def test_schema_promotion
+    promotable_schemas = ['"int"', '"long"', '"float"', '"double"']
+    incorrect = 0
+    promotable_schemas.each_with_index do |ws, i|
+      writers_schema = Avro::Schema.parse(ws)
+      datum_to_write = 219
+      for rs in promotable_schemas[(i + 1)..-1]
+        readers_schema = Avro::Schema.parse(rs)
+        writer, enc, dw = write_datum(datum_to_write, writers_schema)
+        datum_read = read_datum(writer, writers_schema, readers_schema)
+        if datum_read != datum_to_write
+          incorrect += 1
+        end
+      end
+      assert_equal(incorrect, 0)
+    end
+  end
   private
 
   def check_default(schema_json, default_json, default_value)
@@ -325,5 +342,20 @@ EOS
 
   def datum_reader(schm)
     Avro::IO::DatumReader.new(schm)
+  end
+
+  def write_datum(datum, writers_schema)
+    writer = StringIO.new
+    encoder = Avro::IO::BinaryEncoder.new(writer)
+    datum_writer = Avro::IO::DatumWriter.new(writers_schema)
+    datum_writer.write(datum, encoder)
+    [writer, encoder, datum_writer]
+  end
+
+  def read_datum(buffer, writers_schema, readers_schema=nil)
+    reader = StringIO.new(buffer.string)
+    decoder = Avro::IO::BinaryDecoder.new(reader)
+    datum_reader = Avro::IO::DatumReader.new(writers_schema, readers_schema)
+    datum_reader.read(decoder)
   end
 end

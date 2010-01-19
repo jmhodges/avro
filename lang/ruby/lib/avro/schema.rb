@@ -94,7 +94,7 @@ module Avro
         (datum.is_a?(Fixnum) || datum.is_a?(Bignum)) &&
             (LONG_MIN_VALUE <= datum) && (datum <= LONG_MAX_VALUE)
       when 'float', 'double'
-        datum.is_a? Float
+        datum.is_a?(Float) || datum.is_a?(Fixnum) || datum.is_a?(Bignum)
       when 'fixed'
         datum.is_a?(String) && datum.size == expected_schema.size
       when 'enum'
