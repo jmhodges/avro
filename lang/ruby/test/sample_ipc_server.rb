@@ -81,7 +81,7 @@ class MailHandler < RequestHandler
   def handle(request)
     responder = MailResponder.new()
     transport = Avro::IPC::SocketTransport.new(request)
-    transport.write_framed_message(responder.respond(transport))
+    transport.write_framed_message(responder.respond(transport.read_framed_message))
   end
 end
 
