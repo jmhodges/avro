@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -172,7 +172,7 @@ module Avro
         nil
       end
 
-      # a boolean is written as a single byte 
+      # a boolean is written as a single byte
       # whose value is either 0 (false) or 1 (true).
       def write_boolean(datum)
         on_disk = datum ? 1.chr : 0.chr
@@ -265,7 +265,7 @@ module Avro
         elsif (w_type == r_type) && (r_type == 'record') &&
             check_props(writers_schema, readers_schema, ['fullname'])
           return true
-        elsif w_type == r_type && r_type == 'error' && check_props(writers_scheam, readers_schema, ['fullname'])
+        elsif w_type == r_type && r_type == 'error' && check_props(writers_schema, readers_schema, ['fullname'])
           return true
         elsif w_type == r_type && r_type == 'request'
           return true
@@ -424,7 +424,7 @@ module Avro
         if readers_fields_hash.size > read_record.size
           writers_fields_hash = writers_schema.fields_hash
           readers_fields_hash.each do |field_name, field|
-            
+
             unless writers_fields_hash.has_key? field_name
               if !field.default.nil?
                 field_val = read_default_value(field.type, field.default)
